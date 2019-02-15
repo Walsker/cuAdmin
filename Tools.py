@@ -18,7 +18,9 @@ class Time:
 		adjustedHour = 0
 
 		# Checking if it's am or pm
-		if self.hour >= 12:
+		if self.hour == 12:
+			meridian = "PM"
+		elif self.hour > 12:
 			meridian = "PM"
 			adjustedHour = self.hour - 12
 		else:
@@ -28,9 +30,8 @@ class Time:
 		return "February " + str(self.day) + "th at " + timeString
 
 	def toDateTime(self):
-		return datetime.datetime(2019, 2, self.day, self.hour, self.minute)
-
-
+		TIME_ZONE = -5
+		return datetime.datetime(2019, 2, self.day, self.hour - TIME_ZONE, self.minute)
 
 # A class for storing events easily
 class Event:
@@ -51,6 +52,7 @@ class Event:
 		print("Event scans cuBadges: ", self.scannable)
 
 	def toDict(self):
+
 		return {
 			u'title': self.title,
 			u'location': self.location,
