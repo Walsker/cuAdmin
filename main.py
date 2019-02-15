@@ -11,7 +11,9 @@ from firebase_admin import firestore
 # Custom imports
 from Tools import Event, Time
 
-# -------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------
+# EVENT METHODS
+# ---------------------------------------------------------------------------------------
 
 # Retrieving the firebase credentials and initializing the client
 cred = credentials.Certificate("untrackables/cuhacking-903fa-firebase-adminsdk-ho9wm-6fda9fcc33.json")
@@ -60,6 +62,13 @@ def createEvent():
 	# Sending the data off to firebase
 	database.collection(u'events').document(id).set(eventObject.toDict())
 
+	# Adding a scan status collection to the event if it's scannable
+	if scannable:
+		database.collection(u'events').document(id).collection(u'scanStatus').document(u'wal.gatlei@gmail.com').set({
+			u'organizer': None,
+			u'scanned': False
+		})
+
 # A function for deleting an event
 def deleteEvent():
 	
@@ -89,6 +98,13 @@ def displayEvents():
 		print("\tEvent uses cuBadges: ", eventObject['scannable'])
 
 	input("\nPress Enter to continute....")
+
+# ---------------------------------------------------------------------------------------
+# HACKER METHODS
+# ---------------------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------------------
 
 NUM_OPTIONS = 4
 def mainMenu():
@@ -133,36 +149,3 @@ def mainMenu():
 
 # Starting the program
 mainMenu()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# # Creating a hacker object
-# class Hacker:
-#     def __init__(self, ):
-
-# def uploadHackers():
-	
-#     with open("untrackables/hackerInfo.csv", mode="r") as infile:
-#         reader = csv.reader(infile)
-#         mydict = {rows[2]:rows[1] for row in reader}
-
-# uploadHackers()
-
-# # def displayInviteCode(email):
-
-# # def displaycuBadge(email):
-
