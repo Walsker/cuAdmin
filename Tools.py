@@ -31,7 +31,9 @@ class Time:
 
 	def toDateTime(self):
 		TIME_ZONE = -5
-		return datetime.datetime(2019, 2, self.day, self.hour - TIME_ZONE, self.minute)
+		adjustedHour = self.hour - TIME_ZONE
+		if adjustedHour >= 24: adjustedHour -= 24
+		return datetime.datetime(2019, 2, self.day, adjustedHour, self.minute)
 
 # A class for storing events easily
 class Event:
