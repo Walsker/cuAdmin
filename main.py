@@ -2,6 +2,7 @@
 import csv
 import os
 import sys
+import qrcode
 
 # Firebase imports
 import firebase_admin
@@ -11,6 +12,15 @@ from firebase_admin import auth
 
 # Custom imports
 from Tools import Event, Hacker, Time
+
+# ---------------------------------------------------------------------------------------
+
+# Getting the invite and badge keys
+inviteKeyFile = open("untrackables/$invite.txt", "r")
+INVITE_KEY = inviteKeyFile.read()
+
+badgeKeyFile = open("untrackables/$badge.txt", "r")
+BADGE_KEY = inviteKeyFile.read()
 
 # ---------------------------------------------------------------------------------------
 # EVENT METHODS
@@ -100,7 +110,7 @@ def displayEvents():
 		print("\tEnd: ", eventObject['end'])
 		print("\tEvent uses cuBadges: ", eventObject['scannable'])
 
-	input("\nPress Enter to continute....")
+	input("\nPress Enter to return to the main menu.")
 
 # ---------------------------------------------------------------------------------------
 # HACKER METHODS
@@ -184,9 +194,75 @@ def createHacker():
 	# Creating the hacker profile on firebase
 	return makeProfile(hackerObject, "")
 
+# A function that displays an invite code given an email
+def displayInviteCode():
+
+	# Clearing the screen
+	os.system("cls")
+
+	# Getting the requested email
+	email = input("Enter the hacker's email: ")
+
+	user = ""
+	try:
+		user = auth.get_user_by_email(email)
+	except: 
+		print("That's not an email in the database")
+		input("\nPress Enter to return to the main menu.")
+		return
+
+	# Creating the actual QR code
+	inviteCode = qrcode.QRCode(
+		version=None,
+		error_correction=qrcode.constants.ERROR_CORRECT_L,
+		box_size=10,
+		border=4,
+	)
+	inviteCode.add_data(INVITE_KEY + "|" + user.email + "|" + user.uid)
+	inviteCode.make(fit=True)
+
+	# Creating the image
+	imageFile = inviteCode.make_image(fill_color="black", back_color="white")
+	imageFile.save(r'inviteCodes/' + user.email + '.png')
+	print("The invite code was saved at inviteCodes/" + user.email + ".png.")
+	input("\nPress Enter to return to the main menu.")
+
+# A function that displays a cuBadge given an email
+def displaycuBadge():
+
+	# Clearing the screen
+	os.system("cls")
+
+	# Getting the requested email
+	email = input("Enter the hacker's email: ")
+
+	user = ""
+	try:
+		user = auth.get_user_by_email(email)
+	except: 
+		print("That's not an email in the database")
+		input("\nPress Enter to return to the main menu.")
+		return
+
+	# Creating the actual QR code
+	badgeCode = qrcode.QRCode(
+		version=None,
+		error_correction=qrcode.constants.ERROR_CORRECT_L,
+		box_size=10,
+		border=4,
+	)
+	badgeCode.add_data(BADGE_KEY + "|" + user.email)
+	badgeCode.make(fit=True)
+
+	# Creating the image
+	imageFile = badgeCode.make_image(fill_color="#C8102E", back_color="white")
+	imageFile.save(r'cuBadges/' + user.email + '.png')
+	print("The invite code was saved at cuBadges/" + user.email + ".png.")
+	input("\nPress Enter to return to the main menu.")
+
 # ---------------------------------------------------------------------------------------
 
-NUM_OPTIONS = 5
+NUM_OPTIONS = 7
 def mainMenu():
 
 	# Clearing the screen
@@ -208,6 +284,8 @@ def mainMenu():
 		print("\t3: Display Events")
 		print("\nHacker Commands")
 		print("\t4: Create Hacker")
+		print("\t5: Display Invite Code")
+		print("\t6: Display cuBadge Code")
 
 		# Trying to get a valid option
 		try: 
@@ -219,15 +297,15 @@ def mainMenu():
 		except:
 			print("That's not a valid option, try again.\n")
 
-
 	# Going through the options
 	if option == 0: sys.exit(0)
 	elif option == 1: createEvent()
 	elif option == 2: deleteEvent()
 	elif option == 3: displayEvents()
 	elif option == 4: createHacker()
+	elif option == 5: displayInviteCode()
+	elif option == 6: displaycuBadge()
 		
-
 	# Looping the program until the user quits
 	mainMenu()
 
