@@ -1,8 +1,10 @@
 # Python imports
 import csv
 import os
-import sys
 import qrcode
+import random
+import string
+import sys
 
 # Firebase imports
 import firebase_admin
@@ -21,6 +23,10 @@ INVITE_KEY = inviteKeyFile.read()
 
 badgeKeyFile = open("untrackables/$badge.txt", "r")
 BADGE_KEY = inviteKeyFile.read()
+
+# Creating a function that generates a random code
+def generateID(size=30, chars=string.ascii_uppercase + string.ascii_lowercase + string.digits):
+	return ''.join(random.choice(chars) for _ in range(size))
 
 # ---------------------------------------------------------------------------------------
 # EVENT METHODS
@@ -63,11 +69,11 @@ def createEvent():
 	print("\nThe event you're about to create is as follows:\n")
 	eventObject.show()
 	confirm = input("\nAre you okay with this? (y/n to restart/0 to cancel event creation): ")
-	
+
 	# Getting the user's option
 	if confirm == "0": return
 	if confirm == 'y': pass
-	else: 
+	else:
 		print("Let's try again.\n")
 		createEvent()
 
@@ -83,7 +89,7 @@ def createEvent():
 
 # A function for deleting an event
 def deleteEvent():
-	
+
 	# Clearing the screen
 	os.system("cls")
 
@@ -93,7 +99,7 @@ def deleteEvent():
 
 # A function for displaying all the events on the server
 def displayEvents():
-	
+
 	# Creating a gap
 	print("\n\n")
 
@@ -118,9 +124,9 @@ def displayEvents():
 
 # Creating a transaction
 batch = database.batch()
-	
+
 def createScanField(hackerEmail):
-	
+
 	# Getting all the events
 	events = database.collection(u'events').get()
 	scannables = [event.id for event in events if event.to_dict()['scannable']]
@@ -135,11 +141,11 @@ def createScanField(hackerEmail):
 	for eventID in scannables:
 		eventRef = database.collection(u'events').document(eventID).collection(u'scanStatus').document(hackerEmail)
 		batch.set(eventRef, emptyScan)
-	
+
 	# Committing the batch
 	batch.commit()
 
-	input("\nPress Enter to continute....")
+	
 
 # A function for making a whole user/profile set on firebase
 def makeProfile(hacker, id):
@@ -163,6 +169,7 @@ def makeProfile(hacker, id):
 	})
 
 	createScanField(hacker.email)
+	
 	return user
 
 # A function that gets the input for a new hacker
@@ -184,85 +191,132 @@ def createHacker():
 	print("\nThe hacker you're about to create is as follows:\n")
 	hackerObject.show()
 	confirm = input("\nAre you okay with this? (y/n to restart/0 to cancel event creation): ")
-	
+
 	# Getting the user's option
 	if confirm == "0": return
 	if confirm == 'y': pass
-	else: 
+	else:
 		print("Let's try again.\n")
 
 	# Creating the hacker profile on firebase
-	return makeProfile(hackerObject, "")
+	profile = makeProfile(hackerObject, generateID())
+	input("\nPress Enter to continute....")
+	return profile
 
 # A function that displays an invite code given an email
-def displayInviteCode():
+def createQRCode(key, email, id):
 
-	# Clearing the screen
-	os.system("cls")
+	# Changing the color based on the
+	color = "black"
+	code = INVITE_KEY + "|" + email + "|" + id
 
-	# Getting the requested email
-	email = input("Enter the hacker's email: ")
+	if key == BADGE_KEY:
+		color = "#C8102E"
+		code = INVITE_KEY + "|" + email
 
-	user = ""
-	try:
-		user = auth.get_user_by_email(email)
-	except: 
-		print("That's not an email in the database")
-		input("\nPress Enter to return to the main menu.")
-		return
-
-	# Creating the actual QR code
-	inviteCode = qrcode.QRCode(
-		version=None,
-		error_correction=qrcode.constants.ERROR_CORRECT_L,
-		box_size=10,
-		border=4,
-	)
-	inviteCode.add_data(INVITE_KEY + "|" + user.email + "|" + user.uid)
-	inviteCode.make(fit=True)
-
-	# Creating the image
-	imageFile = inviteCode.make_image(fill_color="black", back_color="white")
-	imageFile.save(r'inviteCodes/' + user.email + '.png')
-	print("The invite code was saved at inviteCodes/" + user.email + ".png.")
-	input("\nPress Enter to return to the main menu.")
-
-# A function that displays a cuBadge given an email
-def displaycuBadge():
-
-	# Clearing the screen
-	os.system("cls")
-
-	# Getting the requested email
-	email = input("Enter the hacker's email: ")
-
-	user = ""
-	try:
-		user = auth.get_user_by_email(email)
-	except: 
-		print("That's not an email in the database")
-		input("\nPress Enter to return to the main menu.")
-		return
-
-	# Creating the actual QR code
 	badgeCode = qrcode.QRCode(
 		version=None,
 		error_correction=qrcode.constants.ERROR_CORRECT_L,
 		box_size=10,
 		border=4,
 	)
-	badgeCode.add_data(BADGE_KEY + "|" + user.email)
+	badgeCode.add_data(code)
 	badgeCode.make(fit=True)
 
 	# Creating the image
-	imageFile = badgeCode.make_image(fill_color="#C8102E", back_color="white")
+	return badgeCode.make_image(fill_color=color, back_color="white")
+
+def generateInviteCode():
+
+	# Clearing the screen
+	os.system("cls")
+
+	# Getting the requested email
+	email = input("Enter the hacker's email: ")
+
+	user = ""
+	try:
+		user = auth.get_user_by_email(email)
+	except:
+		print("That's not an email in the database")
+		input("\nPress Enter to return to the main menu.")
+		return
+
+	# Creating the actual QR code
+	imageFile = createQRCode(INVITE_KEY, user.email, user.uid)
+	imageFile.save(r'inviteCodes/' + user.email + '.png')
+
+	print("The invite code was saved at inviteCodes/" + user.email + ".png.")
+	input("\nPress Enter to return to the main menu.")
+
+# A function that displays a cuBadge given an email
+def generatecuBadge():
+
+	# Clearing the screen
+	os.system("cls")
+
+	# Getting the requested email
+	email = input("Enter the hacker's email: ")
+
+	user = ""
+	try:
+		user = auth.get_user_by_email(email)
+	except:
+		print("That's not an email in the database")
+		input("\nPress Enter to return to the main menu.")
+		return
+
+	# Creating the actual QR code
+	imageFile = createQRCode(BADGE_KEY, user.email, " ")
 	imageFile.save(r'cuBadges/' + user.email + '.png')
+
 	print("The invite code was saved at cuBadges/" + user.email + ".png.")
 	input("\nPress Enter to return to the main menu.")
 
 # ---------------------------------------------------------------------------------------
+# DANGEROUS METHODS
+# ---------------------------------------------------------------------------------------
 
-NUM_OPTIONS = 7
+def uploadCSV():
+	
+	# Clearing the screen
+	os.system("cls")
+
+	print("Uploading the csv. This may take a minute or two.")
+
+	# Reading the csv
+	with open("untrackables/hackerInfo.csv", encoding='utf-8') as hackerFile:
+		hackerList = csv.reader(hackerFile, delimiter=',')
+
+		# Creating a profile for each hacker
+		for hacker in hackerList:
+			hackerObject = Hacker(hacker[2], hacker[0], hacker[1], hacker[4])
+			makeProfile(hackerObject, generateID())
+			print("\nUploaded:")
+			hackerObject.show()
+
+	input("\nPress Enter to return to the main menu.")
+
+def generatAllInvites():
+
+	# Clearing the screen
+	os.system("cls")
+
+	print("Generating invite codes. This may take a minute or two.")
+
+	# Feeding all the emails to the generator
+	hackers = database.collection(u'hackers').get()
+	for hacker in hackers:
+		user = auth.get_user_by_email(hacker.id)
+		imageFile = createQRCode(INVITE_KEY, user.email, user.uid)
+		imageFile.save(r'inviteCodes/' + user.email + '.png')
+
+	print("All the invite codes have been saved in inviteCodes/")
+	input("\nPress Enter to return to the main menu.")
+
+# ---------------------------------------------------------------------------------------
+
+NUM_OPTIONS = 9
 def mainMenu():
 
 	# Clearing the screen
@@ -284,11 +338,14 @@ def mainMenu():
 		print("\t3: Display Events")
 		print("\nHacker Commands")
 		print("\t4: Create Hacker")
-		print("\t5: Display Invite Code")
-		print("\t6: Display cuBadge Code")
+		print("\t5: Generate Invite Code")
+		print("\t6: Generate cuBadge Code")
+		print("One time only, very dangerous commands")
+		print("\t7: Upload csv")
+		print("\t8: Generate all the invite codes")
 
 		# Trying to get a valid option
-		try: 
+		try:
 			option = int(input("\nYour selection: "))
 			if (option not in validOptions):
 				print("That's not a valid option, try again.\n")
@@ -303,9 +360,11 @@ def mainMenu():
 	elif option == 2: deleteEvent()
 	elif option == 3: displayEvents()
 	elif option == 4: createHacker()
-	elif option == 5: displayInviteCode()
-	elif option == 6: displaycuBadge()
-		
+	elif option == 5: generateInviteCode()
+	elif option == 6: generatecuBadge()
+	elif option == 7: uploadCSV()
+	elif option == 8: generatAllInvites()
+
 	# Looping the program until the user quits
 	mainMenu()
 
