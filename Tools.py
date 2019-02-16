@@ -62,3 +62,31 @@ class Event:
 			u'end': self.end.toDateTime(),
 			u'scannable': self.scannable
 		}
+
+# A class for hackers
+class Hacker:
+	def __init__(self, email, firstName, lastName, school):
+		self.email = email
+		self.name = {u'first': firstName, u'last': lastName}
+		self.school = school
+
+	def setId(self, id):
+		self.id = id
+
+	def show(self):
+		print("Email: ", self.email)
+		print("First Name: ", self.name['first'])
+		print("Last Name: ", self.name['last'])
+		print("School: ", self.school)
+
+	def toDict(self):
+
+		return {
+			u'email': self.email,
+			u'id': self.id,
+			u'name': {
+				u'first': self.name['first'],
+				u'last': self.name['last']
+			},
+			u'program': self.school # This is named program because I was in a hurry
+		}

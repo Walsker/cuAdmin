@@ -7,9 +7,10 @@ import sys
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
+from firebase_admin import auth
 
 # Custom imports
-from Tools import Event, Time
+from Tools import Event, Hacker, Time
 
 # ---------------------------------------------------------------------------------------
 # EVENT METHODS
@@ -22,6 +23,7 @@ database = firestore.client()
 
 # A function that gets event information from the user
 def createEvent():
+
 	# Clearing the screen
 	os.system("cls")
 
@@ -76,6 +78,7 @@ def deleteEvent():
 	os.system("cls")
 
 	eventID = input("Enter the id of the event you would like to delete: ")
+	# database.collection(u'events').document(eventID).collection('scanStatus').delete()
 	database.collection(u'events').document(eventID).delete()
 
 # A function for displaying all the events on the server
@@ -103,10 +106,87 @@ def displayEvents():
 # HACKER METHODS
 # ---------------------------------------------------------------------------------------
 
+# Creating a transaction
+batch = database.batch()
+	
+def createScanField(hackerEmail):
+	
+	# Getting all the events
+	events = database.collection(u'events').get()
+	scannables = [event.id for event in events if event.to_dict()['scannable']]
+
+	# Creating a dict to represent an empty scan
+	emptyScan = {
+		u'organizer': None,
+		u'scanned': False
+	}
+
+	# Updating all the scannable event scanStatus fields
+	for eventID in scannables:
+		eventRef = database.collection(u'events').document(eventID).collection(u'scanStatus').document(hackerEmail)
+		batch.set(eventRef, emptyScan)
+	
+	# Committing the batch
+	batch.commit()
+
+	input("\nPress Enter to continute....")
+
+# A function for making a whole user/profile set on firebase
+def makeProfile(hacker, id):
+
+	# Creating a user on firebase
+	user = auth.create_user(
+		email = hacker.email,
+		password = id,
+		uid = id,
+	)
+
+	# Creating a profile on firebase
+	database.collection(u'hackers').document(hacker.email).set({
+		u'email': hacker.email,
+		u'id': id,
+		u'name': {
+			u'first': hacker.name['first'],
+			u'last': hacker.name['last']
+		},
+		u'program': hacker.school # yes it's weird i know
+	})
+
+	createScanField(hacker.email)
+	return user
+
+# A function that gets the input for a new hacker
+def createHacker():
+
+	# Clearing the screen
+	os.system("cls")
+
+	print("Welcome to the hacker profile creator!\nPlease input the prompted information.")
+	email = input("Hacker Email: ")
+	firstName = input("First Name: ")
+	lastName = input("Last Name: ")
+	school = input("School: ")
+
+	# Creating a hacker object
+	hackerObject = Hacker(email, firstName, lastName, school)
+
+	# Displaying the input
+	print("\nThe hacker you're about to create is as follows:\n")
+	hackerObject.show()
+	confirm = input("\nAre you okay with this? (y/n to restart/0 to cancel event creation): ")
+	
+	# Getting the user's option
+	if confirm == "0": return
+	if confirm == 'y': pass
+	else: 
+		print("Let's try again.\n")
+
+	# Creating the hacker profile on firebase
+	return makeProfile(hackerObject, "")
 
 # ---------------------------------------------------------------------------------------
 
-NUM_OPTIONS = 4
+NUM_OPTIONS = 5
 def mainMenu():
 
 	# Clearing the screen
@@ -121,10 +201,13 @@ def mainMenu():
 
 		# Printing the options
 		print("cuAdmin has started. What would you like to do?\nEnter a number to select an option.\n")
+		print("Event Related Commands")
 		print("\t0: Quit program")
 		print("\t1: Create Event")
 		print("\t2: Delete Event")
 		print("\t3: Display Events")
+		print("\nHacker Commands")
+		print("\t4: Create Hacker")
 
 		# Trying to get a valid option
 		try: 
@@ -142,6 +225,8 @@ def mainMenu():
 	elif option == 1: createEvent()
 	elif option == 2: deleteEvent()
 	elif option == 3: displayEvents()
+	elif option == 4: createHacker()
+		
 
 	# Looping the program until the user quits
 	mainMenu()
